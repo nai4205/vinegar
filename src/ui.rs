@@ -21,7 +21,7 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
     let tasks_to_display = app.get_tasks_to_display();
     let tasks: Vec<ListItem> = tasks_to_display
         .iter()
-        .map(|(display_name, _)| ListItem::new(display_name.as_str()))
+        .map(|(display_name, _)| ListItem::new(format!("{}", display_name.as_str())))
         .collect();
 
     let task_list = List::new(tasks)
@@ -43,7 +43,7 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
             Style::default().fg(Color::Yellow),
         ),
         AppMode::Normal => (
-            "Press 'a' to add, 'e' to edit, 'j'/'k' to navigate, Enter to expand",
+            "Press 'a' to add, 'd' to deselect, 'e' to edit, 'j'/'k' to navigate, Enter to expand",
             Style::default(),
         ),
     };

@@ -138,6 +138,9 @@ impl App {
                 KeyCode::Enter => self.toggle_expand_task(),
                 KeyCode::Char('k') => self.select_previous_task(),
                 KeyCode::Char('j') => self.select_next_task(),
+                KeyCode::Char('d') => {
+                    self.task_list_state.select(None);
+                }
                 _ => {}
             },
             AppMode::Editing => match key_event.code {
@@ -241,7 +244,7 @@ impl App {
         depth: usize,
     ) {
         let prefix = " ".repeat(depth * 2);
-        let display_name = format!("{}{}", prefix, task.name);
+        let display_name = format!("{}☐ {}", prefix, task.name);
         display_tasks.push((display_name, path.clone()));
 
         if task.expanded {
