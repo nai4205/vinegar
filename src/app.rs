@@ -1,5 +1,6 @@
 use crate::event::{AppEvent, Event, EventHandler};
 use crate::ui;
+use ratatui::widgets::ListState;
 use ratatui::{
     DefaultTerminal,
     crossterm::event::{KeyCode, KeyEvent, KeyModifiers},
@@ -16,12 +17,14 @@ pub struct App {
     pub tasks: Vec<String>,
     pub input: String,
     pub mode: AppMode,
+    pub task_list_state: ListState,
 }
 
 #[derive(Debug, PartialEq)]
 pub enum AppMode {
     Normal,
     Editing,
+    EditingTask { index: usize },
 }
 
 impl Default for App {
@@ -32,6 +35,7 @@ impl Default for App {
             tasks: Vec::new(),
             input: String::new(),
             mode: AppMode::Normal,
+            task_list_state: ListState::default(),
         }
     }
 }
@@ -45,7 +49,7 @@ impl App {
     /// Run the application's main loop.
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> color_eyre::Result<()> {
         while self.running {
-            terminal.draw(|frame| ui::ui(frame, &self))?;
+            terminal.draw(|frame| ui::ui(frame, &mut self))?; // Pass mutable self
             match self.events.next().await? {
                 Event::Tick => self.tick(),
                 Event::Crossterm(event) => {
@@ -57,6 +61,12 @@ impl App {
                     AppEvent::Quit => self.quit(),
                     AppEvent::AddTask => {
                         self.tasks.push(self.input.drain(..).collect());
+                        self.mode = AppMode::Normal;
+                    }
+                    AppEvent::UpdateTask => {
+                        if let AppMode::EditingTask { index } = self.mode {
+                            self.tasks[index] = self.input.drain(..).collect();
+                        }
                         self.mode = AppMode::Normal;
                     }
                 },
@@ -76,6 +86,14 @@ impl App {
                 KeyCode::Char('a') => {
                     self.mode = AppMode::Editing;
                 }
+                KeyCode::Char('e') => {
+                    if let Some(selected) = self.task_list_state.selected() {
+                        self.input = self.tasks[selected].clone();
+                        self.mode = AppMode::EditingTask { index: selected };
+                    }
+                }
+                KeyCode::Char('k') => self.select_previous_task(),
+                KeyCode::Char('j') => self.select_next_task(),
                 _ => {}
             },
             AppMode::Editing => match key_event.code {
@@ -91,6 +109,15 @@ impl App {
                 }
                 _ => {}
             },
+            AppMode::EditingTask { .. } => match key_event.code {
+                KeyCode::Enter => self.events.send(AppEvent::UpdateTask),
+                KeyCode::Char(c) => self.input.push(c),
+                KeyCode::Backspace => {
+                    self.input.pop();
+                }
+                KeyCode::Esc => self.mode = AppMode::Normal,
+                _ => {}
+            },
         }
         Ok(())
     }
@@ -104,5 +131,39 @@ impl App {
     /// Set running to false to quit the application.
     pub fn quit(&mut self) {
         self.running = false;
+    }
+
+    fn select_next_task(&mut self) {
+        if self.tasks.is_empty() {
+            return;
+        }
+        let i = match self.task_list_state.selected() {
+            Some(i) => {
+                if i >= self.tasks.len() - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.task_list_state.select(Some(i));
+    }
+
+    fn select_previous_task(&mut self) {
+        if self.tasks.is_empty() {
+            return;
+        }
+        let i = match self.task_list_state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.tasks.len() - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.task_list_state.select(Some(i));
     }
 }

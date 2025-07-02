@@ -2,16 +2,17 @@ use crate::app::{App, AppMode};
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout},
-    style::{Color, Style},
+    style::{Color, Modifier, Style, Stylize},
     widgets::{Block, BorderType, List, ListItem, Paragraph},
 };
 
-pub fn ui(frame: &mut Frame, app: &App) {
+pub fn ui(frame: &mut Frame, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Percentage(80), Constraint::Percentage(20)].as_ref())
-        .split(frame.area());
+        .split(frame.size());
 
+    // Main task list
     let main_block = Block::bordered()
         .title("Tasks")
         .title_alignment(Alignment::Center)
@@ -26,26 +27,44 @@ pub fn ui(frame: &mut Frame, app: &App) {
     let task_list = List::new(tasks)
         .block(main_block)
         .style(Style::default().fg(Color::White))
-        .highlight_style(Style::default().add_modifier(ratatui::style::Modifier::ITALIC))
+        .highlight_style(
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .bg(Color::Blue),
+        )
         .highlight_symbol(">> ");
 
-    frame.render_widget(task_list, chunks[0]);
+    frame.render_stateful_widget(task_list, chunks[0], &mut app.task_list_state);
+
+    // Input/Editing block
+    let (input_title, input_style) = match app.mode {
+        AppMode::Editing => (
+            "Add Task (Press Enter to submit)",
+            Style::default().fg(Color::Yellow),
+        ),
+        AppMode::EditingTask { .. } => (
+            "Edit Task (Press Enter to submit)",
+            Style::default().fg(Color::Yellow),
+        ),
+        AppMode::Normal => (
+            "Press 'a' to add, 'e' to edit, 'j'/'k' to navigate",
+            Style::default(),
+        ),
+    };
 
     let input_block = Block::bordered()
-        .title("Add Task")
+        .title(input_title)
         .title_alignment(Alignment::Center)
         .border_type(BorderType::Rounded);
 
-    let input_paragraph =
-        Paragraph::new(app.input.as_str())
-            .block(input_block)
-            .style(match app.mode {
-                AppMode::Editing => Style::default().fg(Color::Yellow),
-                _ => Style::default(),
-            });
+    let input_paragraph = Paragraph::new(app.input.as_str())
+        .block(input_block)
+        .style(input_style);
 
     frame.render_widget(input_paragraph, chunks[1]);
-    if app.mode == AppMode::Editing {
+
+    // Set cursor position only when in an editing mode
+    if let AppMode::Editing | AppMode::EditingTask { .. } = app.mode {
         frame.set_cursor_position((chunks[1].x + app.input.len() as u16 + 1, chunks[1].y + 1));
     }
 }
