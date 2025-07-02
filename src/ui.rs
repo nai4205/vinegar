@@ -10,7 +10,7 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Percentage(80), Constraint::Percentage(20)].as_ref())
-        .split(frame.size());
+        .split(frame.area());
 
     // Main task list
     let main_block = Block::bordered()
@@ -18,20 +18,16 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
         .title_alignment(Alignment::Center)
         .border_type(BorderType::Rounded);
 
-    let tasks: Vec<ListItem> = app
-        .tasks
+    let tasks_to_display = app.get_tasks_to_display();
+    let tasks: Vec<ListItem> = tasks_to_display
         .iter()
-        .map(|task| ListItem::new(task.as_str()))
+        .map(|(display_name, _)| ListItem::new(display_name.as_str()))
         .collect();
 
     let task_list = List::new(tasks)
         .block(main_block)
         .style(Style::default().fg(Color::White))
-        .highlight_style(
-            Style::default()
-                .add_modifier(Modifier::BOLD)
-                .bg(Color::Blue),
-        )
+        .highlight_style(Style::default().add_modifier(Modifier::BOLD))
         .highlight_symbol(">> ");
 
     frame.render_stateful_widget(task_list, chunks[0], &mut app.task_list_state);
@@ -47,7 +43,7 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
             Style::default().fg(Color::Yellow),
         ),
         AppMode::Normal => (
-            "Press 'a' to add, 'e' to edit, 'j'/'k' to navigate",
+            "Press 'a' to add, 'e' to edit, 'j'/'k' to navigate, Enter to expand",
             Style::default(),
         ),
     };

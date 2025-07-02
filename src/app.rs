@@ -6,15 +6,31 @@ use ratatui::{
     crossterm::event::{KeyCode, KeyEvent, KeyModifiers},
 };
 
+#[derive(Debug, Clone)]
+pub struct Task {
+    pub name: String,
+    pub subtasks: Vec<Task>,
+    pub expanded: bool,
+}
+
+impl Task {
+    pub fn new(name: String) -> Self {
+        Self {
+            name,
+            subtasks: Vec::new(),
+            expanded: false,
+        }
+    }
+}
+
 /// Application.
 #[derive(Debug)]
 pub struct App {
     /// Is the application running?
     pub running: bool,
-    /// Counter.
     /// Event handler.
     pub events: EventHandler,
-    pub tasks: Vec<String>,
+    pub tasks: Vec<Task>,
     pub input: String,
     pub mode: AppMode,
     pub task_list_state: ListState,
@@ -24,7 +40,7 @@ pub struct App {
 pub enum AppMode {
     Normal,
     Editing,
-    EditingTask { index: usize },
+    EditingTask { path: Vec<usize> },
 }
 
 impl Default for App {
@@ -60,12 +76,31 @@ impl App {
                 Event::App(app_event) => match app_event {
                     AppEvent::Quit => self.quit(),
                     AppEvent::AddTask => {
-                        self.tasks.push(self.input.drain(..).collect());
+                        if let Some(selected_index) = self.task_list_state.selected() {
+                            let tasks_to_display = self.get_tasks_to_display();
+                            if let Some(selected_task_info) = tasks_to_display.get(selected_index) {
+                                let task_path = &selected_task_info.1;
+                                let mut task_ref = &mut self.tasks[task_path[0]];
+                                for &index in task_path.iter().skip(1) {
+                                    task_ref = &mut task_ref.subtasks[index];
+                                }
+                                task_ref
+                                    .subtasks
+                                    .push(Task::new(self.input.drain(..).collect()));
+                                task_ref.expanded = true;
+                            }
+                        } else {
+                            self.tasks.push(Task::new(self.input.drain(..).collect()));
+                        }
                         self.mode = AppMode::Normal;
                     }
                     AppEvent::UpdateTask => {
-                        if let AppMode::EditingTask { index } = self.mode {
-                            self.tasks[index] = self.input.drain(..).collect();
+                        if let AppMode::EditingTask { path } = &self.mode {
+                            let mut task_ref = &mut self.tasks[path[0]];
+                            for &index in path.iter().skip(1) {
+                                task_ref = &mut task_ref.subtasks[index];
+                            }
+                            task_ref.name = self.input.drain(..).collect();
                         }
                         self.mode = AppMode::Normal;
                     }
@@ -88,10 +123,19 @@ impl App {
                 }
                 KeyCode::Char('e') => {
                     if let Some(selected) = self.task_list_state.selected() {
-                        self.input = self.tasks[selected].clone();
-                        self.mode = AppMode::EditingTask { index: selected };
+                        let tasks_to_display = self.get_tasks_to_display();
+                        if let Some(selected_task_info) = tasks_to_display.get(selected) {
+                            let task_path = selected_task_info.1.clone();
+                            let mut task_ref = &self.tasks[task_path[0]];
+                            for &index in task_path.iter().skip(1) {
+                                task_ref = &task_ref.subtasks[index];
+                            }
+                            self.input = task_ref.name.clone();
+                            self.mode = AppMode::EditingTask { path: task_path };
+                        }
                     }
                 }
+                KeyCode::Enter => self.toggle_expand_task(),
                 KeyCode::Char('k') => self.select_previous_task(),
                 KeyCode::Char('j') => self.select_next_task(),
                 _ => {}
@@ -123,9 +167,6 @@ impl App {
     }
 
     /// Handles the tick event of the terminal.
-    ///
-    /// The tick event is where you can update the state of your application with any logic that
-    /// needs to be updated at a fixed frame rate. E.g. polling a server, updating an animation.
     pub fn tick(&self) {}
 
     /// Set running to false to quit the application.
@@ -133,13 +174,29 @@ impl App {
         self.running = false;
     }
 
+    ///Some -> takes a special type: option. option can be something or nothing,
+    fn toggle_expand_task(&mut self) {
+        if let Some(selected_index) = self.task_list_state.selected() {
+            let tasks_to_display = self.get_tasks_to_display();
+            if let Some(selected_task_info) = tasks_to_display.get(selected_index) {
+                let task_path = &selected_task_info.1;
+                let mut task_ref = &mut self.tasks[task_path[0]];
+                for &index in task_path.iter().skip(1) {
+                    task_ref = &mut task_ref.subtasks[index];
+                }
+                task_ref.expanded = !task_ref.expanded;
+            }
+        }
+    }
+
     fn select_next_task(&mut self) {
-        if self.tasks.is_empty() {
+        let task_count = self.get_tasks_to_display().len();
+        if task_count == 0 {
             return;
         }
         let i = match self.task_list_state.selected() {
             Some(i) => {
-                if i >= self.tasks.len() - 1 {
+                if i >= task_count - 1 {
                     0
                 } else {
                     i + 1
@@ -151,13 +208,14 @@ impl App {
     }
 
     fn select_previous_task(&mut self) {
-        if self.tasks.is_empty() {
+        let task_count = self.get_tasks_to_display().len();
+        if task_count == 0 {
             return;
         }
         let i = match self.task_list_state.selected() {
             Some(i) => {
                 if i == 0 {
-                    self.tasks.len() - 1
+                    task_count - 1
                 } else {
                     i - 1
                 }
@@ -165,5 +223,33 @@ impl App {
             None => 0,
         };
         self.task_list_state.select(Some(i));
+    }
+
+    pub fn get_tasks_to_display(&self) -> Vec<(String, Vec<usize>)> {
+        let mut display_tasks = Vec::new();
+        for (i, task) in self.tasks.iter().enumerate() {
+            self.add_task_to_display(&mut display_tasks, task, vec![i], 0);
+        }
+        display_tasks
+    }
+
+    fn add_task_to_display(
+        &self,
+        display_tasks: &mut Vec<(String, Vec<usize>)>,
+        task: &Task,
+        path: Vec<usize>,
+        depth: usize,
+    ) {
+        let prefix = " ".repeat(depth * 2);
+        let display_name = format!("{}{}", prefix, task.name);
+        display_tasks.push((display_name, path.clone()));
+
+        if task.expanded {
+            for (i, subtask) in task.subtasks.iter().enumerate() {
+                let mut sub_path = path.clone();
+                sub_path.push(i);
+                self.add_task_to_display(display_tasks, subtask, sub_path, depth + 1);
+            }
+        }
     }
 }
