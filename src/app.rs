@@ -1,4 +1,5 @@
 use crate::event::{AppEvent, Event, EventHandler};
+use crate::ui;
 use ratatui::{
     DefaultTerminal,
     crossterm::event::{KeyCode, KeyEvent, KeyModifiers},
@@ -10,17 +11,27 @@ pub struct App {
     /// Is the application running?
     pub running: bool,
     /// Counter.
-    pub counter: u8,
     /// Event handler.
     pub events: EventHandler,
+    pub tasks: Vec<String>,
+    pub input: String,
+    pub mode: AppMode,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum AppMode {
+    Normal,
+    Editing,
 }
 
 impl Default for App {
     fn default() -> Self {
         Self {
             running: true,
-            counter: 0,
             events: EventHandler::new(),
+            tasks: Vec::new(),
+            input: String::new(),
+            mode: AppMode::Normal,
         }
     }
 }
@@ -34,7 +45,7 @@ impl App {
     /// Run the application's main loop.
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> color_eyre::Result<()> {
         while self.running {
-            terminal.draw(|frame| frame.render_widget(&self, frame.area()))?;
+            terminal.draw(|frame| ui::ui(frame, &self))?;
             match self.events.next().await? {
                 Event::Tick => self.tick(),
                 Event::Crossterm(event) => {
@@ -43,9 +54,11 @@ impl App {
                     }
                 }
                 Event::App(app_event) => match app_event {
-                    AppEvent::Increment => self.increment_counter(),
-                    AppEvent::Decrement => self.decrement_counter(),
                     AppEvent::Quit => self.quit(),
+                    AppEvent::AddTask => {
+                        self.tasks.push(self.input.drain(..).collect());
+                        self.mode = AppMode::Normal;
+                    }
                 },
             }
         }
@@ -54,15 +67,30 @@ impl App {
 
     /// Handles the key events and updates the state of [`App`].
     pub fn handle_key_events(&mut self, key_event: KeyEvent) -> color_eyre::Result<()> {
-        match key_event.code {
-            KeyCode::Esc | KeyCode::Char('q') => self.events.send(AppEvent::Quit),
-            KeyCode::Char('c' | 'C') if key_event.modifiers == KeyModifiers::CONTROL => {
-                self.events.send(AppEvent::Quit)
-            }
-            KeyCode::Char('l') => self.events.send(AppEvent::Increment),
-            KeyCode::Char('h') => self.events.send(AppEvent::Decrement),
-            // Other handlers you could add here.
-            _ => {}
+        match self.mode {
+            AppMode::Normal => match key_event.code {
+                KeyCode::Esc | KeyCode::Char('q') => self.events.send(AppEvent::Quit),
+                KeyCode::Char('c' | 'C') if key_event.modifiers == KeyModifiers::CONTROL => {
+                    self.events.send(AppEvent::Quit)
+                }
+                KeyCode::Char('a') => {
+                    self.mode = AppMode::Editing;
+                }
+                _ => {}
+            },
+            AppMode::Editing => match key_event.code {
+                KeyCode::Enter => self.events.send(AppEvent::AddTask),
+                KeyCode::Char(c) => {
+                    self.input.push(c);
+                }
+                KeyCode::Backspace => {
+                    self.input.pop();
+                }
+                KeyCode::Esc => {
+                    self.mode = AppMode::Normal;
+                }
+                _ => {}
+            },
         }
         Ok(())
     }
@@ -76,13 +104,5 @@ impl App {
     /// Set running to false to quit the application.
     pub fn quit(&mut self) {
         self.running = false;
-    }
-
-    pub fn increment_counter(&mut self) {
-        self.counter = self.counter.saturating_add(1);
-    }
-
-    pub fn decrement_counter(&mut self) {
-        self.counter = self.counter.saturating_sub(1);
     }
 }

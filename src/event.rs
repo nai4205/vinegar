@@ -31,12 +31,10 @@ pub enum Event {
 /// You can extend this enum with your own custom events.
 #[derive(Clone, Debug)]
 pub enum AppEvent {
-    /// Increment the counter.
-    Increment,
-    /// Decrement the counter.
-    Decrement,
     /// Quit the application.
     Quit,
+    // Add new task
+    AddTask,
 }
 
 /// Terminal event handler.
@@ -78,9 +76,15 @@ impl EventHandler {
     /// This is useful for sending events to the event handler which will be processed by the next
     /// iteration of the application's event loop.
     pub fn send(&mut self, app_event: AppEvent) {
-        // Ignore the result as the reciever cannot be dropped while this struct still has a
+        // Ignore the result as the receiver cannot be dropped while this struct still has a
         // reference to it
         let _ = self.sender.send(Event::App(app_event));
+    }
+}
+
+impl Default for EventHandler {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
