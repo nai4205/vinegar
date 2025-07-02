@@ -9,7 +9,7 @@ pub struct Config {
     pub keys: Keybindings,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub struct Keybindings {
     pub quit: KeyEvent,
     pub add_task: KeyEvent,

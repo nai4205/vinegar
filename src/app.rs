@@ -1,3 +1,4 @@
+use crate::config::Config;
 use crate::event::{AppEvent, Event, EventHandler};
 use crate::ui;
 use ratatui::widgets::ListState;
@@ -34,6 +35,7 @@ pub struct App {
     pub input: String,
     pub mode: AppMode,
     pub task_list_state: ListState,
+    pub config: Config,
 }
 
 #[derive(Debug, PartialEq)]
@@ -43,8 +45,9 @@ pub enum AppMode {
     EditingTask { path: Vec<usize> },
 }
 
-impl Default for App {
-    fn default() -> Self {
+impl App {
+    /// Constructs a new instance of [`App`].
+    pub fn new(config: Config) -> Self {
         Self {
             running: true,
             events: EventHandler::new(),
@@ -52,14 +55,8 @@ impl Default for App {
             input: String::new(),
             mode: AppMode::Normal,
             task_list_state: ListState::default(),
+            config,
         }
-    }
-}
-
-impl App {
-    /// Constructs a new instance of [`App`].
-    pub fn new() -> Self {
-        Self::default()
     }
 
     /// Run the application's main loop.
@@ -113,15 +110,12 @@ impl App {
     /// Handles the key events and updates the state of [`App`].
     pub fn handle_key_events(&mut self, key_event: KeyEvent) -> color_eyre::Result<()> {
         match self.mode {
-            AppMode::Normal => match key_event.code {
-                KeyCode::Esc | KeyCode::Char('q') => self.events.send(AppEvent::Quit),
-                KeyCode::Char('c' | 'C') if key_event.modifiers == KeyModifiers::CONTROL => {
-                    self.events.send(AppEvent::Quit)
-                }
-                KeyCode::Char('a') => {
+            AppMode::Normal => {
+                if key_event == self.config.keys.quit {
+                    self.events.send(AppEvent::Quit);
+                } else if key_event == self.config.keys.add_task {
                     self.mode = AppMode::Editing;
-                }
-                KeyCode::Char('e') => {
+                } else if key_event == self.config.keys.edit_task {
                     if let Some(selected) = self.task_list_state.selected() {
                         let tasks_to_display = self.get_tasks_to_display();
                         if let Some(selected_task_info) = tasks_to_display.get(selected) {
@@ -134,15 +128,16 @@ impl App {
                             self.mode = AppMode::EditingTask { path: task_path };
                         }
                     }
-                }
-                KeyCode::Enter => self.toggle_expand_task(),
-                KeyCode::Char('k') => self.select_previous_task(),
-                KeyCode::Char('j') => self.select_next_task(),
-                KeyCode::Char('d') => {
+                } else if key_event == self.config.keys.toggle_expand {
+                    self.toggle_expand_task();
+                } else if key_event == self.config.keys.select_previous {
+                    self.select_previous_task();
+                } else if key_event == self.config.keys.select_next {
+                    self.select_next_task();
+                } else if key_event == self.config.keys.deselect {
                     self.task_list_state.select(None);
                 }
-                _ => {}
-            },
+            }
             AppMode::Editing => match key_event.code {
                 KeyCode::Enter => self.events.send(AppEvent::AddTask),
                 KeyCode::Char(c) => {

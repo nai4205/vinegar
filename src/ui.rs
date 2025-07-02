@@ -1,10 +1,29 @@
 use crate::app::{App, AppMode};
+use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style, Stylize},
     widgets::{Block, BorderType, List, ListItem, Paragraph},
 };
+
+fn format_key_event(key_event: KeyEvent) -> String {
+    let mut s = String::new();
+    if key_event.modifiers.contains(KeyModifiers::CONTROL) {
+        s.push_str("Ctrl+");
+    }
+    if key_event.modifiers.contains(KeyModifiers::ALT) {
+        s.push_str("Alt+");
+    }
+    if key_event.modifiers.contains(KeyModifiers::SHIFT) {
+        s.push_str("Shift+");
+    }
+    match key_event.code {
+        KeyCode::Char(c) => s.push(c),
+        _ => s.push_str(&format!("{:?}", key_event.code)),
+    }
+    s
+}
 
 pub fn ui(frame: &mut Frame, app: &mut App) {
     let chunks = Layout::default()
@@ -33,6 +52,7 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
     frame.render_stateful_widget(task_list, chunks[0], &mut app.task_list_state);
 
     // Input/Editing block
+    let help_text;
     let (input_title, input_style) = match app.mode {
         AppMode::Editing => (
             "Add Task (Press Enter to submit)",
@@ -42,10 +62,20 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
             "Edit Task (Press Enter to submit)",
             Style::default().fg(Color::Yellow),
         ),
-        AppMode::Normal => (
-            "Press 'a' to add, 'd' to deselect, 'e' to edit, 'j'/'k' to navigate, Enter to expand",
-            Style::default(),
-        ),
+        AppMode::Normal => {
+            let keybindings = &app.config.keys;
+            help_text = format!(
+                "Press '{}' to add, '{}' to deselect, '{}' to edit, '{}/{}' to navigate, {} to expand, '{}' to quit",
+                format_key_event(keybindings.add_task),
+                format_key_event(keybindings.deselect),
+                format_key_event(keybindings.edit_task),
+                format_key_event(keybindings.select_previous),
+                format_key_event(keybindings.select_next),
+                format_key_event(keybindings.toggle_expand),
+                format_key_event(keybindings.quit),
+            );
+            (help_text.as_str(), Style::default())
+        }
     };
 
     let input_block = Block::bordered()
