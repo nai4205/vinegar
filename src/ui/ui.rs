@@ -42,7 +42,7 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
     let main_fg = Color::from_str(&theme.colors.main_fg).unwrap_or(Color::White);
     let input_fg = Color::from_str(&theme.colors.input_fg).unwrap_or(Color::Yellow);
     let highlight_mod = parse_modifier(&theme.other.highlight_mod);
-    let highlight_symbol = &theme.other.highlight_symbol; // Get the highlight symbol
+    let highlight_symbol = &theme.icons.highlight_symbol; // Get the highlight symbol
 
     // Main task list
     let main_block = Block::bordered()

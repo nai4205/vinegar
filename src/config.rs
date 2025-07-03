@@ -42,6 +42,7 @@ pub enum LayoutDirection {
 pub struct ThemeConfig {
     pub colors: ColorsConfig,
     pub other: OtherConfig,
+    pub icons: IconsConfig,
 }
 
 #[derive(Debug, Deserialize)]
@@ -55,7 +56,24 @@ pub struct ColorsConfig {
 #[serde(default)]
 pub struct OtherConfig {
     pub highlight_mod: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(default)]
+pub struct IconsConfig {
+    pub expanded: String,
+    pub collapsed: String,
     pub highlight_symbol: String,
+}
+
+impl Default for IconsConfig {
+    fn default() -> Self {
+        Self {
+            expanded: "▼".to_string(),
+            collapsed: "▶".to_string(),
+            highlight_symbol: "> ".to_string(),
+        }
+    }
 }
 
 impl Default for Keybindings {
@@ -95,7 +113,6 @@ impl Default for OtherConfig {
     fn default() -> Self {
         Self {
             highlight_mod: "Bold".to_string(),
-            highlight_symbol: "> ".to_string(),
         }
     }
 }

@@ -13,9 +13,14 @@ direction = "Vertical"
 constraints = [90, 10]
 
 [theme.colors]
-main_fg = "Blue"
+main_fg = "White"
 input_fg = "Yellow"
 
 [theme.other]
-highlight_symbol = "> " 
 highlight_mod = "Italic"
+
+[theme.icons]
+expanded = "▾"
+collapsed = "▸"
+highlight_symbol = "> " 
+

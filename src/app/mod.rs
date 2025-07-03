@@ -138,7 +138,15 @@ impl App {
         depth: usize,
     ) {
         let prefix = " ".repeat(depth * 2);
-        let display_name = format!("{}☐ {}", prefix, task.name);
+        let icon = if task.subtasks.is_empty() {
+            ""
+        } else if task.expanded {
+            &self.config.theme.icons.expanded
+        } else {
+            &self.config.theme.icons.collapsed
+        };
+        // Use the icon and add a space after it
+        let display_name = format!("{}{}{}", prefix, icon, task.name);
         display_tasks.push((display_name, path.clone()));
 
         if task.expanded {

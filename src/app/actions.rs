@@ -1,4 +1,5 @@
 use super::{App, AppMode};
+use crate::app::task_utils;
 use crate::event::AppEvent;
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 
@@ -66,11 +67,12 @@ fn toggle_expand_task(app: &mut App) {
         let tasks_to_display = app.get_tasks_to_display();
         if let Some(selected_task_info) = tasks_to_display.get(selected_index) {
             let task_path = &selected_task_info.1;
-            let mut task_ref = &mut app.tasks[task_path[0]];
-            for &index in task_path.iter().skip(1) {
-                task_ref = &mut task_ref.subtasks[index];
+            if let Some(task_ref) = task_utils::get_task_mut(&mut app.tasks, task_path) {
+                // Only toggle if the task is already expanded or has subtasks
+                if task_ref.expanded || !task_ref.subtasks.is_empty() {
+                    task_ref.expanded = !task_ref.expanded;
+                }
             }
-            task_ref.expanded = !task_ref.expanded;
         }
     }
 }
