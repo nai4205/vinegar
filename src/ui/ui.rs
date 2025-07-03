@@ -1,6 +1,6 @@
 use crate::app::{state::AppMode, App};
 use crate::config::LayoutDirection;
-use crate::helpers::UIHelpers::{format_key_event, parse_modifier};
+use crate::ui::utils::{format_key_event, parse_modifier};
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Style, Stylize},

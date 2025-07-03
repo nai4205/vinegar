@@ -42,7 +42,7 @@ impl App {
     /// Run the application's main loop.
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> color_eyre::Result<()> {
         while self.running {
-            terminal.draw(|frame| ui::ui(frame, &mut self))?;
+            terminal.draw(|frame| ui::ui::ui(frame, &mut self))?;
             match self.events.next().await? {
                 Event::Tick => self.tick(),
                 Event::Crossterm(event) => {
