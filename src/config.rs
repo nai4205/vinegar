@@ -1,5 +1,4 @@
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use ratatui::layout::{self, Constraint, Direction};
 use serde::Deserialize;
 use std::fs;
 use std::path::Path;

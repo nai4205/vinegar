@@ -1,11 +1,9 @@
-use crate::app::{App, AppMode};
+use crate::app::{state::AppMode, App};
 use crate::config::LayoutDirection;
 use crate::helpers::UIHelpers::{format_key_event, parse_modifier};
-use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use ratatui::widgets::HighlightSpacing;
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout},
-    style::{Color, Modifier, Style, Stylize},
+    style::{Color, Style, Stylize},
     widgets::{Block, BorderType, List, ListItem, Paragraph},
     Frame,
 };
@@ -56,7 +54,7 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
     let tasks_to_display = app.get_tasks_to_display();
     let tasks: Vec<ListItem> = tasks_to_display
         .iter()
-        .map(|(display_name, _)| ListItem::new(format!("{}", display_name.as_str())))
+        .map(|(display_name, _)| ListItem::new(display_name.as_str().to_string()))
         .collect();
 
     let task_list = List::new(tasks)
