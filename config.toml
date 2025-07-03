@@ -1,6 +1,7 @@
 [keys]
 quit = { code = { Char = "q" }, modifiers = "", kind = "Press", state = "" }
 add_task = { code = { Char = "a" }, modifiers = "", kind = "Press", state = "" }
+delete_task = { code = { Char = "x" }, modifiers = "", kind = "Press", state = "" }
 edit_task = { code = { Char = "e" }, modifiers = "", kind = "Press", state = "" }
 deselect = { code = { Char = "d" }, modifiers = "", kind = "Press", state = "" }
 toggle_expand = { code = "Enter", modifiers = "", kind = "Press", state = "" }

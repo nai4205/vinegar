@@ -17,6 +17,7 @@ pub struct Config {
 pub struct Keybindings {
     pub quit: KeyEvent,
     pub add_task: KeyEvent,
+    pub delete_task: KeyEvent,
     pub edit_task: KeyEvent,
     pub deselect: KeyEvent,
     pub toggle_expand: KeyEvent,
@@ -62,6 +63,7 @@ impl Default for Keybindings {
         Self {
             quit: KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE),
             add_task: KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE),
+            delete_task: KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE),
             edit_task: KeyEvent::new(KeyCode::Char('e'), KeyModifiers::NONE),
             deselect: KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE),
             toggle_expand: KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),

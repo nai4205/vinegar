@@ -35,6 +35,7 @@ pub enum AppEvent {
     Quit,
     // Add new task
     AddTask,
+    DeleteTask,
     UpdateTask,
 }
 

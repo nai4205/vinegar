@@ -80,6 +80,19 @@ impl App {
                         }
                         self.mode = AppMode::Normal;
                     }
+                    AppEvent::DeleteTask => {
+                        if let Some(selected_index) = self.task_list_state.selected() {
+                            let tasks_to_display = self.get_tasks_to_display();
+                            if let Some(selected_task_info) = tasks_to_display.get(selected_index) {
+                                let task_path = &selected_task_info.1;
+                                let mut task_ref = &mut self.tasks[task_path[0]];
+                                for &index in task_path.iter().skip(1) {
+                                    task_ref = &mut task_ref.subtasks[index];
+                                }
+                                task_ref.subtasks.pop();
+                            }
+                        }
+                    }
                 },
             }
         }

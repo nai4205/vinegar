@@ -10,6 +10,8 @@ pub fn handle_key_events(key_event: KeyEvent, app: &mut App) -> color_eyre::Resu
                 app.events.send(AppEvent::Quit);
             } else if key_event == app.config.keys.add_task {
                 app.mode = AppMode::Editing;
+            } else if key_event == app.config.keys.delete_task {
+                app.events.send(AppEvent::DeleteTask);
             } else if key_event == app.config.keys.edit_task {
                 if let Some(selected) = app.task_list_state.selected() {
                     let tasks_to_display = app.get_tasks_to_display();
