@@ -1,6 +1,7 @@
 pub mod actions;
 pub mod state;
 pub mod task;
+pub mod task_utils;
 
 use crate::config::Config;
 use crate::event::{AppEvent, Event, EventHandler};
@@ -41,7 +42,7 @@ impl App {
     /// Run the application's main loop.
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> color_eyre::Result<()> {
         while self.running {
-            terminal.draw(|frame| ui::ui(frame, &mut self))?; // Pass mutable self
+            terminal.draw(|frame| ui::ui(frame, &mut self))?;
             match self.events.next().await? {
                 Event::Tick => self.tick(),
                 Event::Crossterm(event) => {
@@ -56,14 +57,13 @@ impl App {
                             let tasks_to_display = self.get_tasks_to_display();
                             if let Some(selected_task_info) = tasks_to_display.get(selected_index) {
                                 let task_path = &selected_task_info.1;
-                                let mut task_ref = &mut self.tasks[task_path[0]];
-                                for &index in task_path.iter().skip(1) {
-                                    task_ref = &mut task_ref.subtasks[index];
+                                if let Some(task) =
+                                    task_utils::get_task_mut(&mut self.tasks, task_path)
+                                {
+                                    task.subtasks
+                                        .push(Task::new(self.input.drain(..).collect()));
+                                    task.expanded = true;
                                 }
-                                task_ref
-                                    .subtasks
-                                    .push(Task::new(self.input.drain(..).collect()));
-                                task_ref.expanded = true;
                             }
                         } else {
                             self.tasks.push(Task::new(self.input.drain(..).collect()));
@@ -72,24 +72,39 @@ impl App {
                     }
                     AppEvent::UpdateTask => {
                         if let AppMode::EditingTask { path } = &self.mode {
-                            let mut task_ref = &mut self.tasks[path[0]];
-                            for &index in path.iter().skip(1) {
-                                task_ref = &mut task_ref.subtasks[index];
+                            if let Some(task) = task_utils::get_task_mut(&mut self.tasks, path) {
+                                task.name = self.input.drain(..).collect();
                             }
-                            task_ref.name = self.input.drain(..).collect();
                         }
                         self.mode = AppMode::Normal;
                     }
                     AppEvent::DeleteTask => {
                         if let Some(selected_index) = self.task_list_state.selected() {
                             let tasks_to_display = self.get_tasks_to_display();
-                            if let Some(selected_task_info) = tasks_to_display.get(selected_index) {
-                                let task_path = &selected_task_info.1;
-                                let mut task_ref = &mut self.tasks[task_path[0]];
-                                for &index in task_path.iter().skip(1) {
-                                    task_ref = &mut task_ref.subtasks[index];
+                            if let Some(selected_task_info) =
+                                tasks_to_display.get(selected_index).cloned()
+                            {
+                                let task_path = selected_task_info.1;
+
+                                if task_path.len() > 1 {
+                                    let parent_path = &task_path[..task_path.len() - 1];
+                                    let task_index = *task_path.last().unwrap();
+                                    if let Some(parent_task) =
+                                        task_utils::get_task_mut(&mut self.tasks, parent_path)
+                                    {
+                                        parent_task.subtasks.remove(task_index);
+                                    }
+                                } else {
+                                    let task_index = task_path[0];
+                                    self.tasks.remove(task_index);
                                 }
-                                task_ref.subtasks.pop();
+
+                                let task_count = self.get_tasks_to_display().len();
+                                if task_count == 0 {
+                                    self.task_list_state.select(None);
+                                } else if selected_index >= task_count {
+                                    self.task_list_state.select(Some(task_count - 1));
+                                }
                             }
                         }
                     }

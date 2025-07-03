@@ -78,10 +78,11 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
         AppMode::Normal => {
             let keybindings = &app.config.keys;
             help_text = format!(
-                "Press '{}' to add, '{}' to deselect, '{}' to edit, '{}/{}' to navigate, {} to expand, '{}' to quit",
+                "Press '{}' to add, '{}' to deselect, '{}' to edit, '{} to delete', '{}/{}' to navigate, {} to expand, '{}' to quit",
                 format_key_event(keybindings.add_task),
                 format_key_event(keybindings.deselect),
                 format_key_event(keybindings.edit_task),
+                format_key_event(keybindings.delete_task),
                 format_key_event(keybindings.select_previous),
                 format_key_event(keybindings.select_next),
                 format_key_event(keybindings.toggle_expand),
