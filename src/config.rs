@@ -1,4 +1,5 @@
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use ratatui::layout::{Constraint, Direction};
 use serde::Deserialize;
 use std::fs;
 use std::path::Path;
@@ -7,6 +8,8 @@ use std::path::Path;
 pub struct Config {
     #[serde(default)]
     pub keys: Keybindings,
+    #[serde(default)]
+    pub layout: LayoutConfig,
 }
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
@@ -18,6 +21,18 @@ pub struct Keybindings {
     pub toggle_expand: KeyEvent,
     pub select_next: KeyEvent,
     pub select_previous: KeyEvent,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LayoutConfig {
+    pub direction: LayoutDirection,
+    pub constraints: Vec<u16>,
+}
+
+#[derive(Debug, Deserialize)]
+pub enum LayoutDirection {
+    Horizontal,
+    Vertical,
 }
 
 impl Default for Keybindings {
@@ -34,6 +49,15 @@ impl Default for Keybindings {
     }
 }
 
+impl Default for LayoutConfig {
+    fn default() -> Self {
+        Self {
+            direction: LayoutDirection::Vertical,
+            constraints: vec![80, 20],
+        }
+    }
+}
+
 pub fn load_config() -> Config {
     let path = Path::new("config.toml");
     if path.exists() {
@@ -42,6 +66,7 @@ pub fn load_config() -> Config {
     } else {
         Config {
             keys: Keybindings::default(),
+            layout: LayoutConfig::default(),
         }
     }
 }

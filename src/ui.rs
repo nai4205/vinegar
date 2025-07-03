@@ -1,10 +1,11 @@
 use crate::app::{App, AppMode};
+use crate::config::LayoutDirection;
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
-    Frame,
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style, Stylize},
     widgets::{Block, BorderType, List, ListItem, Paragraph},
+    Frame,
 };
 
 fn format_key_event(key_event: KeyEvent) -> String {
@@ -26,10 +27,32 @@ fn format_key_event(key_event: KeyEvent) -> String {
 }
 
 pub fn ui(frame: &mut Frame, app: &mut App) {
+    //=> are match arms, below is matching the variable direction to see if it is horizontal or
+    //vertical then setting it to those directions
+    let direction = match app.config.layout.direction {
+        LayoutDirection::Horizontal => Direction::Horizontal,
+        LayoutDirection::Vertical => Direction::Vertical,
+    };
+
+    let constraints: Vec<Constraint> = app
+        .config
+        .layout
+        .constraints
+        .iter()
+        .map(|&p| Constraint::Percentage(p))
+        .collect();
+    /*
+    The |&p| is called a closure, the p represents one item
+    from the iterator at a time, the & dereferences the p to a number from the constraints
+    in the config, then converts it to a percentage.
+    So above converts, [80,20] into [Constraint::Percentage(80), Constraint::Percentage(20)]
+    Which can be used by ratatui
+    */
     let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Percentage(80), Constraint::Percentage(20)].as_ref())
+        .direction(direction)
+        .constraints(constraints)
         .split(frame.area());
+    //The values defined above; direction and constraint are used here
 
     // Main task list
     let main_block = Block::bordered()

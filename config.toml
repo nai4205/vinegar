@@ -1,8 +1,12 @@
 [keys]
-quit = { code = { Char = "a" }, modifiers = "", kind = "Press", state = "" }
-add_task = { code = { Char = "p" }, modifiers = "", kind = "Press", state = "" }
+quit = { code = { Char = "q" }, modifiers = "", kind = "Press", state = "" }
+add_task = { code = { Char = "a" }, modifiers = "", kind = "Press", state = "" }
 edit_task = { code = { Char = "e" }, modifiers = "", kind = "Press", state = "" }
 deselect = { code = { Char = "d" }, modifiers = "", kind = "Press", state = "" }
 toggle_expand = { code = "Enter", modifiers = "", kind = "Press", state = "" }
 select_next = { code = { Char = "j" }, modifiers = "", kind = "Press", state = "" }
 select_previous = { code = { Char = "k" }, modifiers = "", kind = "Press", state = "" }
+
+[layout]
+direction = "Vertical"
+constraints = [80, 20]
