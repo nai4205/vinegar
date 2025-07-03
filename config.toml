@@ -10,3 +10,11 @@ select_previous = { code = { Char = "k" }, modifiers = "", kind = "Press", state
 [layout]
 direction = "Vertical"
 constraints = [80, 20]
+
+[theme.colors]
+main_fg = "Red"
+input_fg = "Yellow"
+
+[theme.other]
+highlight_symbol = ">> "
+highlight_mod = "Italic"

@@ -1,15 +1,17 @@
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use ratatui::layout::{Constraint, Direction};
+use ratatui::layout::{self, Constraint, Direction};
 use serde::Deserialize;
 use std::fs;
 use std::path::Path;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 pub struct Config {
     #[serde(default)]
     pub keys: Keybindings,
     #[serde(default)]
     pub layout: LayoutConfig,
+    #[serde(default)]
+    pub theme: ThemeConfig,
 }
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
@@ -35,6 +37,27 @@ pub enum LayoutDirection {
     Vertical,
 }
 
+#[derive(Debug, Deserialize, Default)]
+#[serde(default)]
+pub struct ThemeConfig {
+    pub colors: ColorsConfig,
+    pub other: OtherConfig,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(default)]
+pub struct ColorsConfig {
+    pub main_fg: String,
+    pub input_fg: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(default)]
+pub struct OtherConfig {
+    pub highlight_mod: String,
+    pub highlight_symbol: String,
+}
+
 impl Default for Keybindings {
     fn default() -> Self {
         Self {
@@ -58,15 +81,30 @@ impl Default for LayoutConfig {
     }
 }
 
+impl Default for ColorsConfig {
+    fn default() -> Self {
+        Self {
+            main_fg: "White".to_string(),
+            input_fg: "Yellow".to_string(),
+        }
+    }
+}
+
+impl Default for OtherConfig {
+    fn default() -> Self {
+        Self {
+            highlight_mod: "Bold".to_string(),
+            highlight_symbol: "> ".to_string(),
+        }
+    }
+}
+
 pub fn load_config() -> Config {
     let path = Path::new("config.toml");
     if path.exists() {
         let config_str = fs::read_to_string(path).expect("Failed to read config file");
         toml::from_str(&config_str).expect("Failed to parse config file")
     } else {
-        Config {
-            keys: Keybindings::default(),
-            layout: LayoutConfig::default(),
-        }
+        Config::default()
     }
 }

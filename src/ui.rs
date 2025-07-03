@@ -1,30 +1,15 @@
 use crate::app::{App, AppMode};
 use crate::config::LayoutDirection;
+use crate::helpers::UIHelpers::{format_key_event, parse_modifier};
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use ratatui::widgets::HighlightSpacing;
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style, Stylize},
     widgets::{Block, BorderType, List, ListItem, Paragraph},
     Frame,
 };
-
-fn format_key_event(key_event: KeyEvent) -> String {
-    let mut s = String::new();
-    if key_event.modifiers.contains(KeyModifiers::CONTROL) {
-        s.push_str("Ctrl+");
-    }
-    if key_event.modifiers.contains(KeyModifiers::ALT) {
-        s.push_str("Alt+");
-    }
-    if key_event.modifiers.contains(KeyModifiers::SHIFT) {
-        s.push_str("Shift+");
-    }
-    match key_event.code {
-        KeyCode::Char(c) => s.push(c),
-        _ => s.push_str(&format!("{:?}", key_event.code)),
-    }
-    s
-}
+use std::str::FromStr;
 
 pub fn ui(frame: &mut Frame, app: &mut App) {
     //=> are match arms, below is matching the variable direction to see if it is horizontal or
@@ -54,6 +39,14 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
         .split(frame.area());
     //The values defined above; direction and constraint are used here
 
+    // --- Apply Nested Theme from Config ---
+    let theme = &app.config.theme;
+    let main_fg = Color::from_str(&theme.colors.main_fg).unwrap_or(Color::White);
+    let input_fg = Color::from_str(&theme.colors.input_fg).unwrap_or(Color::Yellow);
+    let highlight_mod = parse_modifier(&theme.other.highlight_mod);
+    let highlight_symbol = &theme.other.highlight_symbol; // Get the highlight symbol
+                                                          // ---
+
     // Main task list
     let main_block = Block::bordered()
         .title("Tasks")
@@ -68,22 +61,22 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
 
     let task_list = List::new(tasks)
         .block(main_block)
-        .style(Style::default().fg(Color::White))
-        .highlight_style(Style::default().add_modifier(Modifier::BOLD))
-        .highlight_symbol(">> ");
+        .style(Style::default().fg(main_fg)) // Use themed color
+        .highlight_style(Style::default().add_modifier(highlight_mod)) // Use themed modifier
+        .highlight_symbol(highlight_symbol);
 
     frame.render_stateful_widget(task_list, chunks[0], &mut app.task_list_state);
 
     // Input/Editing block
     let help_text;
-    let (input_title, input_style) = match app.mode {
+    let (input_title, mut input_style) = match app.mode {
         AppMode::Editing => (
             "Add Task (Press Enter to submit)",
-            Style::default().fg(Color::Yellow),
+            Style::default().fg(input_fg), // Use themed color
         ),
         AppMode::EditingTask { .. } => (
             "Edit Task (Press Enter to submit)",
-            Style::default().fg(Color::Yellow),
+            Style::default().fg(input_fg), // Use themed color
         ),
         AppMode::Normal => {
             let keybindings = &app.config.keys;
@@ -100,6 +93,11 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
             (help_text.as_str(), Style::default())
         }
     };
+
+    // In Normal mode, the style is default, let's make sure it has the right foreground
+    if app.mode == AppMode::Normal {
+        input_style = input_style.fg(main_fg);
+    }
 
     let input_block = Block::bordered()
         .title(input_title)
